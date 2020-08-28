@@ -10,6 +10,19 @@ const { spawn } = require('child_process');
 const dateFormat = require('dateformat');
 const mkdirp = require('mkdirp');
 const fs = require('fs');
+const path = require('path');
+
+function convertFilePath(filepath) {
+  // Convert path separators for current platform.
+  const sep = path.sep;
+  const universalFilePath = filepath.replace(/\//g, sep);
+
+  // Backslashes must be escaped twice
+  // because these paths are used for CLI arguments.
+  const escapedFilePath = universalFilePath.replace(/\\/g, '\\\\');
+
+  return escapedFilePath;
+}
 
 class NodeTransSession extends EventEmitter {
   constructor(conf) {
@@ -37,21 +50,21 @@ class NodeTransSession extends EventEmitter {
       this.conf.mp4Flags = this.conf.mp4Flags ? this.conf.mp4Flags : '';
       let mp4FileName = dateFormat('yyyy-mm-dd-HH-MM-ss') + '.mp4';
       let mapMp4 = `${this.conf.mp4Flags}${ouPath}/${mp4FileName}|`;
-      mapStr += mapMp4;
+      mapStr += convertFilePath(mapMp4);
       Logger.log('[Transmuxing MP4] ' + this.conf.streamPath + ' to ' + ouPath + '/' + mp4FileName);
     }
     if (this.conf.hls) {
       this.conf.hlsFlags = this.conf.hlsFlags ? this.conf.hlsFlags : '';
       let hlsFileName = 'index.m3u8';
       let mapHls = `${this.conf.hlsFlags}${ouPath}/${hlsFileName}|`;
-      mapStr += mapHls;
+      mapStr += convertFilePath(mapHls);
       Logger.log('[Transmuxing HLS] ' + this.conf.streamPath + ' to ' + ouPath + '/' + hlsFileName);
     }
     if (this.conf.dash) {
       this.conf.dashFlags = this.conf.dashFlags ? this.conf.dashFlags : '';
       let dashFileName = 'index.mpd';
       let mapDash = `${this.conf.dashFlags}${ouPath}/${dashFileName}`;
-      mapStr += mapDash;
+      mapStr += convertFilePath(mapDash);
       Logger.log('[Transmuxing DASH] ' + this.conf.streamPath + ' to ' + ouPath + '/' + dashFileName);
     }
     mkdirp.sync(ouPath);
@@ -86,7 +99,7 @@ class NodeTransSession extends EventEmitter {
               || filename.endsWith('.mpd')
               || filename.endsWith('.m4s')
               || filename.endsWith('.tmp')) {
-              fs.unlinkSync(ouPath + '/' + filename);
+              fs.unlinkSync(convertFilePath(ouPath + '/' + filename));
             }
           })
         }
